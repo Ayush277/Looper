@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(docker --version)",
+      "Bash(git --version)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(npx --yes create-next-app@latest frontend --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --yes)",
+      "Bash(.venv/bin/ruff check *)",
+      "Bash(.venv/bin/mypy)"
+    ]
+  }
+}

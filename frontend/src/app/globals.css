@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/* LoopJob design tokens — docs/09-ui-design-system.md (dark-first) */
+:root {
+  --background: hsl(222 47% 6%);
+  --card: hsl(222 44% 9%);
+  --border: hsl(220 30% 16%);
+  --foreground: hsl(210 30% 96%);
+  --muted-foreground: hsl(217 15% 62%);
+  --primary: hsl(160 84% 45%);
+  --primary-foreground: hsl(222 47% 6%);
+  --accent: hsl(217 91% 62%);
+  --destructive: hsl(0 72% 54%);
+  --warning: hsl(38 92% 55%);
+  --ring: hsl(160 84% 45%);
+  --radius: 10px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-card: var(--radius);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "cv11";
+}

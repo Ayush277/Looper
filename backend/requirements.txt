@@ -1,0 +1,17 @@
+# Runtime — pinned majors, compatible with Python 3.10
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.8.1
+SQLAlchemy[asyncio]==2.0.38
+alembic==1.14.1
+aiosqlite==0.21.0          # dev database
+asyncpg==0.30.0            # prod database
+httpx==0.28.1
+loguru==0.7.3
+beautifulsoup4==4.13.3
+lxml==5.3.1
+playwright==1.50.0
+jinja2==3.1.5
+apscheduler==3.11.0
+sentence-transformers==3.4.1
