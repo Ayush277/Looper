@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import AppSettings, Job, Keyword
 from app.matching.embedders import Embedder, cosine
-from app.matching.rules import check_exclusions, check_requirements
+from app.matching.rules import (
+    check_exclusions,
+    check_requirements,
+    has_early_career_signal,
+    is_early_career_keyword,
+)
 
 # An include keyword only becomes a *reason* above this similarity.
 REASON_SIMILARITY = 0.45
@@ -57,6 +62,13 @@ async def match_jobs(
     excludes = [k.term for k in keywords if k.kind == "exclude"]
     app = (await session.execute(select(AppSettings))).scalar_one()
 
+    # Enforce the early-career gate only when the user actually targets it
+    # (i.e. has intern/grad/new-grad-type include keywords). "Role" keywords
+    # drive the semantic score; "level" keywords express the gate.
+    role_includes = [k for k in includes if not is_early_career_keyword(k.term)]
+    enforce_early_career = any(is_early_career_keyword(k.term) for k in includes)
+    scored_includes = role_includes or includes
+
     await _ensure_keyword_embeddings(session, embedder, includes)
 
     stats = MatchStats()
@@ -71,7 +83,9 @@ async def match_jobs(
 
     for job in jobs:
         stats.processed += 1
-        exclusion_hits = check_exclusions(job.title, excludes)
+
+        # 1. Hard exclusions (senior terms + years-of-experience, title + desc).
+        exclusion_hits = check_exclusions(job.title, excludes, job.description_snippet)
         if exclusion_hits:
             job.status = "excluded"
             job.match_score = None
@@ -79,9 +93,22 @@ async def match_jobs(
             stats.excluded += 1
             continue
 
+        # 2. Early-career gate: an internship monitor requires an intern/grad
+        #    signal. Drops senior/architect/generic-IT roles that merely look
+        #    like software work to the embedder.
+        if enforce_early_career and not has_early_career_signal(
+            job.title, job.description_snippet
+        ):
+            job.status = "unmatched"
+            job.match_score = None
+            job.match_reasons = [{"term": "not an early-career role", "kind": "gate"}]
+            stats.unmatched += 1
+            continue
+
+        # 3. Semantic score vs role keywords + requirement boost.
         sims = [
             (k.term, cosine(job.embedding or [], k.embedding or []))
-            for k in includes
+            for k in scored_includes
             if k.embedding
         ]
         sims.sort(key=lambda pair: pair[1], reverse=True)
