@@ -97,7 +97,13 @@ async def _scan_company(
 
 
 async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> None:
-    app = (await session.execute(select(AppSettings))).scalar_one()
+    # populate_existing: bypass the session identity-map cache — settings may
+    # have been edited (e.g. via the dashboard) while this scan was running.
+    app = (
+        await session.execute(
+            select(AppSettings).execution_options(populate_existing=True)
+        )
+    ).scalar_one()
     if not app.email_enabled or not app.notification_email:
         logger.info("digest skipped: email disabled or no recipient configured")
         return
