@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     def is_dev(self) -> bool:
         return self.loopjob_env == "dev"
 
+    def model_post_init(self, __context: object) -> None:
+        # Managed Postgres (Railway/Render) hands out postgresql:// —
+        # normalize to the asyncpg driver our engine requires.
+        if self.database_url.startswith("postgresql://"):
+            self.database_url = self.database_url.replace(
+                "postgresql://", "postgresql+asyncpg://", 1
+            )
+
 
 @lru_cache
 def get_settings() -> Settings:
