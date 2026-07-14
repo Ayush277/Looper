@@ -35,12 +35,14 @@ class Settings(BaseSettings):
         return self.loopjob_env == "dev"
 
     def model_post_init(self, __context: object) -> None:
-        # Managed Postgres (Railway/Render) hands out postgresql:// —
-        # normalize to the asyncpg driver our engine requires.
-        if self.database_url.startswith("postgresql://"):
-            self.database_url = self.database_url.replace(
-                "postgresql://", "postgresql+asyncpg://", 1
-            )
+        # Managed Postgres (Railway/Neon/Render) hands out postgresql:// with
+        # libpq-style params — normalize for the asyncpg driver.
+        url = self.database_url
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        url = url.replace("sslmode=", "ssl=").replace("&channel_binding=require", "")
+        url = url.replace("?channel_binding=require&", "?").rstrip("?")
+        self.database_url = url
 
 
 @lru_cache
