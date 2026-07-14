@@ -16,9 +16,14 @@ API_PREFIX = "/api/v1"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    await scheduler_service.start_scheduler()
+    # In web-dashboard mode the cloud cron (GitHub Actions) owns scheduling —
+    # running the in-process scheduler too would double-scan.
+    run_scheduler = not get_settings().web_mode
+    if run_scheduler:
+        await scheduler_service.start_scheduler()
     yield
-    await scheduler_service.stop_scheduler()
+    if run_scheduler:
+        await scheduler_service.stop_scheduler()
 
 
 def create_app() -> FastAPI:

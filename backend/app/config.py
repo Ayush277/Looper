@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     loopjob_env: Literal["dev", "prod"] = "dev"
     log_level: str = "INFO"
 
+    # Web-dashboard host mode: disables the in-process scheduler (cloud cron
+    # scans instead) and makes "Scan now" report the schedule rather than run
+    # a scan on the lightweight web host.
+    web_mode: bool = False
+
     database_url: str = "sqlite+aiosqlite:///./loopjob.db"
     redis_url: str = "redis://localhost:6379/0"
 

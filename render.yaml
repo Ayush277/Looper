@@ -1,0 +1,23 @@
+# Render Blueprint — deploys the LoopJob web-dashboard API for free.
+# Scheduled scans run separately on GitHub Actions (see .github/workflows/scan.yml).
+services:
+  - type: web
+    name: loopjob-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: Dockerfile.web
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: WEB_MODE
+        value: "true"
+      - key: LOOPJOB_ENV
+        value: prod
+      - key: DATABASE_URL
+        sync: false   # paste your Neon connection string
+      - key: RESEND_API_KEY
+        sync: false
+      - key: JSEARCH_API_KEY
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false   # your Vercel URL, e.g. https://looper.vercel.app

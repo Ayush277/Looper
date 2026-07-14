@@ -1,0 +1,13 @@
+# Slim deps for the web-dashboard host (Render/Fly/etc).
+# Excludes the heavy scan-only deps (torch/sentence-transformers/playwright) —
+# scheduled scans run on GitHub Actions with the full requirements.txt.
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.8.1
+SQLAlchemy[asyncio]==2.0.38
+asyncpg==0.30.0
+httpx==0.28.1
+loguru==0.7.3
+jinja2==3.1.5
+apscheduler==3.11.0

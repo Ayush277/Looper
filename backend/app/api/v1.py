@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import scheduler_service
+from app.config import get_settings
 from app.db.engine import get_session
 from app.db.models import (
     AppSettings,
@@ -23,7 +24,9 @@ from app.db.models import (
     Schedule,
     utcnow,
 )
-from app.features.scans.orchestrator import run_scan
+
+# run_scan is imported lazily inside the scan endpoints so the heavy scraping/
+# matching deps stay out of the base API import graph (web-dashboard host).
 
 router = APIRouter()
 
@@ -138,6 +141,10 @@ async def scan_company(
     company_id: str, session: AsyncSession = Depends(get_session)
 ) -> dict[str, Any]:
     await _get_company(session, company_id)
+    if get_settings().web_mode:
+        return _WEB_SCAN_MSG
+    from app.features.scans.orchestrator import run_scan
+
     task = asyncio.create_task(run_scan(trigger="manual_company", company_id=company_id))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
@@ -261,15 +268,23 @@ async def set_job_state(
 # ── Scans ────────────────────────────────────────────────────────────────
 
 _background_tasks: set[asyncio.Task[str]] = set()
+_WEB_SCAN_MSG = {
+    "status": "scheduled",
+    "message": "Scans run automatically in the cloud at 08:00 / 14:00 / 20:00 IST.",
+}
 
 
 @router.post("/scans", status_code=202)
 async def trigger_scan(session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+    if get_settings().web_mode:
+        return _WEB_SCAN_MSG
     running = (
         await session.execute(select(ScanRun).where(ScanRun.status == "running"))
     ).scalar_one_or_none()
     if running:
         raise HTTPException(409, "a scan is already running")
+    from app.features.scans.orchestrator import run_scan
+
     task = asyncio.create_task(run_scan(trigger="manual"))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)

@@ -11,13 +11,16 @@ from sqlalchemy import select
 
 from app.db.engine import SessionFactory
 from app.db.models import AppSettings, Schedule
-from app.features.scans.orchestrator import run_scan
 
 _scheduler: AsyncIOScheduler | None = None
 
 
 async def _scheduled_scan() -> None:
     logger.info("scheduled scan firing")
+    # Lazy import: keeps the heavy scan deps (scraping/matching) out of the
+    # base API import graph so the web dashboard host can stay slim.
+    from app.features.scans.orchestrator import run_scan
+
     await run_scan(trigger="scheduled")
 
 
