@@ -26,6 +26,8 @@
 | 17 | Deployment Strategy | [13-deployment-strategy.md](13-deployment-strategy.md) | ✅ Draft |
 | 18 | Future Roadmap | [14-future-roadmap.md](14-future-roadmap.md) | ✅ Draft |
 | +  | Global Discovery Mode (scope addition) | [15-global-discovery.md](15-global-discovery.md) | ✅ Approved direction |
+| +  | User Guide (how it works, settings, deploy) | [16-user-guide.md](16-user-guide.md) | ✅ Live |
+| +  | Demo Video & Launch Kit | [17-demo-video-kit.md](17-demo-video-kit.md) | ✅ Live |
 
 ## Reading order
 
