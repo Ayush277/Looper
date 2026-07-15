@@ -6,6 +6,7 @@ registry before generic ATS probing.
 """
 import contextlib
 import json
+import re
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any
@@ -21,13 +22,25 @@ Adapter = Callable[[Fetcher], Awaitable[list[RawJob]]]
 async def amazon(fetcher: Fetcher) -> list[RawJob]:
     """amazon.jobs search API. Filtered to intern-ish queries to bound volume —
     Amazon lists tens of thousands of roles; we only ever need the early-career slice.
+
+    A global "intern" search is dominated by US/CN/EU listings, so India-targeted
+    passes run explicitly (normalized_country_code) — otherwise India postings
+    never appear in the first page of results.
     """
     jobs: list[RawJob] = []
     seen: set[str] = set()
-    for query in ("intern", "graduate"):
+    queries = [
+        # (base_query, extra params) — global early-career + India-specific passes
+        ("intern", ""),
+        ("graduate", ""),
+        ("intern", "&normalized_country_code%5B%5D=IND"),
+        ("software engineer", "&normalized_country_code%5B%5D=IND"),
+        ("university", "&normalized_country_code%5B%5D=IND"),
+    ]
+    for query, extra in queries:
         url = (
             "https://www.amazon.jobs/en/search.json"
-            f"?base_query={query}&result_limit=100&offset=0&sort=recent"
+            f"?base_query={query}&result_limit=100&offset=0&sort=recent{extra}"
         )
         resp = await fetcher.get(url, is_json=True)
         if resp.status_code != 200:
@@ -106,7 +119,106 @@ async def microsoft(fetcher: Fetcher) -> list[RawJob]:
     return jobs
 
 
+async def uber(fetcher: Fetcher) -> list[RawJob]:
+    """Uber's careers search API. It rejects requests without a CSRF header;
+    a placeholder token satisfies the check for this public search endpoint."""
+    jobs: list[RawJob] = []
+    seen: set[str] = set()
+    for query in ("intern", "university", "new grad"):
+        resp = await fetcher.post_json(
+            "https://www.uber.com/api/loadSearchJobsResults?localeCode=en",
+            {"params": {"query": query}, "page": 0, "limit": 100},
+            extra_headers={"x-csrf-token": "x"},
+        )
+        if resp.status_code != 200:
+            continue
+        try:
+            # A query with no hits returns results: null, not [].
+            results = json.loads(resp.text)["data"]["results"] or []
+        except (json.JSONDecodeError, KeyError, TypeError):
+            continue
+        for j in results:
+            job_id = str(j.get("id", ""))
+            if not job_id or job_id in seen:
+                continue
+            seen.add(job_id)
+            loc = j.get("location") or {}
+            location = ", ".join(
+                p for p in [loc.get("city"), loc.get("countryName")] if p
+            ) or None
+            posted = None
+            if isinstance(j.get("creationDate"), str):
+                with contextlib.suppress(ValueError):
+                    posted = datetime.fromisoformat(
+                        j["creationDate"].replace("Z", "+00:00")
+                    ).date()
+            try:
+                jobs.append(
+                    RawJob(
+                        title=j["title"],
+                        apply_url=f"https://www.uber.com/careers/list/{job_id}/",
+                        location=location,
+                        external_id=job_id,
+                        posted_at=posted,
+                    )
+                )
+            except (KeyError, ValueError):
+                continue
+    if jobs:
+        logger.info("uber adapter: {} jobs", len(jobs))
+    return jobs
+
+
+_SLUG_TAIL = re.compile(r"/jobs/\d+/([^/]+)/job", re.I)
+
+
+async def atlassian(fetcher: Fetcher) -> list[RawJob]:
+    """Atlassian publishes a full listings feed; titles live in the URL slug
+    (the feed itself carries no title field)."""
+    resp = await fetcher.get(
+        "https://www.atlassian.com/endpoint/careers/listings", is_json=True
+    )
+    if resp.status_code != 200:
+        return []
+    try:
+        items = json.loads(resp.text)
+    except json.JSONDecodeError:
+        return []
+    jobs: list[RawJob] = []
+    for item in items:
+        post = item.get("portalJobPost") or {}
+        url = post.get("portalUrl")
+        if not url:
+            continue
+        title = post.get("title")
+        if not title:
+            m = _SLUG_TAIL.search(url)
+            if not m:
+                continue
+            title = m.group(1).replace("-", " ").strip().title()
+        posted = None
+        if isinstance(post.get("updatedDate"), str):
+            with contextlib.suppress(ValueError):
+                posted = datetime.fromisoformat(post["updatedDate"][:10]).date()
+        try:
+            jobs.append(
+                RawJob(
+                    title=title,
+                    apply_url=url,
+                    external_id=str(post.get("id")) if post.get("id") else None,
+                    posted_at=posted,
+                )
+            )
+        except ValueError:
+            continue
+    if jobs:
+        logger.info("atlassian adapter: {} jobs", len(jobs))
+    return jobs
+
+
 ADAPTERS: dict[str, Adapter] = {
     "amazon": amazon,
     "microsoft": microsoft,
+    "uber": uber,
+    "atlassian": atlassian,
 }

@@ -20,6 +20,10 @@ WD_URL = re.compile(
 )
 PAGE_SIZE = 20
 MAX_PAGES = 5
+# Workday returns an unfiltered firehose otherwise; without a search term the
+# first pages are whatever the tenant lists (often senior US roles), so
+# early-career postings in other regions never surface. Search per term.
+SEARCH_TERMS = ("intern", "graduate", "university")
 
 
 def parse_workday_url(careers_url: str) -> tuple[str, str, str] | None:
@@ -38,40 +42,43 @@ async def fetch_workday_jobs(fetcher: Fetcher, careers_url: str) -> list[RawJob]
     endpoint = f"{base}/wday/cxs/{tenant}/{site}/jobs"
 
     jobs: list[RawJob] = []
-    for page in range(MAX_PAGES):
-        body: dict[str, object] = {
-            "limit": PAGE_SIZE,
-            "offset": page * PAGE_SIZE,
-            "searchText": "",
-            "appliedFacets": {},
-        }
-        resp = await fetcher.post_json(endpoint, body)
-        if resp.status_code != 200:
-            return jobs
-        try:
-            data: dict[str, Any] = json.loads(resp.text)
-        except json.JSONDecodeError:
-            return jobs
-        postings = data.get("jobPostings", [])
-        for p in postings:
-            title = p.get("title")
-            path = p.get("externalPath")
-            if not title or not path:
-                continue
+    seen: set[str] = set()
+    for term in SEARCH_TERMS:
+        for page in range(MAX_PAGES):
+            body: dict[str, object] = {
+                "limit": PAGE_SIZE,
+                "offset": page * PAGE_SIZE,
+                "searchText": term,
+                "appliedFacets": {},
+            }
+            resp = await fetcher.post_json(endpoint, body)
+            if resp.status_code != 200:
+                break
             try:
-                jobs.append(
-                    RawJob(
-                        title=title,
-                        apply_url=f"{base}/en-US/{site}{path}",
-                        location=p.get("locationsText"),
-                        external_id=(p.get("bulletFields") or [None])[0],
+                data: dict[str, Any] = json.loads(resp.text)
+            except json.JSONDecodeError:
+                break
+            postings = data.get("jobPostings", [])
+            for p in postings:
+                title = p.get("title")
+                path = p.get("externalPath")
+                if not title or not path or path in seen:
+                    continue
+                seen.add(path)
+                try:
+                    jobs.append(
+                        RawJob(
+                            title=title,
+                            apply_url=f"{base}/en-US/{site}{path}",
+                            location=p.get("locationsText"),
+                            external_id=(p.get("bulletFields") or [None])[0],
+                        )
                     )
-                )
-            except ValueError:
-                continue
-        total = int(data.get("total", 0))
-        if (page + 1) * PAGE_SIZE >= total or not postings:
-            break
+                except ValueError:
+                    continue
+            total = int(data.get("total", 0))
+            if (page + 1) * PAGE_SIZE >= total or not postings:
+                break
     if jobs:
         logger.info("workday: {} jobs from {}/{}", len(jobs), tenant, site)
     return jobs

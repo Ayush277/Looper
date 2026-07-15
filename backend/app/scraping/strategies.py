@@ -117,12 +117,27 @@ CHAIN: list[tuple[Strategy, StrategyFn]] = [
 ]
 
 
+# Portals whose JSON API is strictly better than scraping their rendered page:
+# the page shows only the first ~20 cards, the API exposes the full searchable
+# board. Try job_api first for these regardless of strategy memory.
+_API_FIRST_HOSTS = ("myworkdayjobs.com", "greenhouse.io", "lever.co", "ashbyhq.com")
+
+
+def _api_first(company_name: str, careers_url: str | None) -> bool:
+    if company_name.lower() in ADAPTERS:
+        return True
+    url = careers_url or ""
+    return any(h in url for h in _API_FIRST_HOSTS)
+
+
 async def run_strategy_chain(
     fetcher: Fetcher,
     company_name: str,
     careers_url: str | None,
     preferred: str | None = None,
 ) -> ScrapeOutcome:
+    if _api_first(company_name, careers_url):
+        preferred = Strategy.JOB_API.value
     ordered = sorted(CHAIN, key=lambda pair: pair[0].value != preferred)
     outcome = ScrapeOutcome()
     for strategy, fn in ordered:

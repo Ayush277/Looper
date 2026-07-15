@@ -51,9 +51,16 @@ class Fetcher:
     async def get(self, url: str, *, is_json: bool = False) -> FetchResponse:
         return await self._request("GET", url, is_json=is_json)
 
-    async def post_json(self, url: str, body: dict[str, object]) -> FetchResponse:
+    async def post_json(
+        self,
+        url: str,
+        body: dict[str, object],
+        extra_headers: dict[str, str] | None = None,
+    ) -> FetchResponse:
         """POST a JSON body (Workday CxS-style search endpoints)."""
-        return await self._request("POST", url, is_json=True, json_body=body)
+        return await self._request(
+            "POST", url, is_json=True, json_body=body, extra_headers=extra_headers
+        )
 
     async def _request(
         self,
@@ -62,6 +69,7 @@ class Fetcher:
         *,
         is_json: bool = False,
         json_body: dict[str, object] | None = None,
+        extra_headers: dict[str, str] | None = None,
     ) -> FetchResponse:
         domain = urlsplit(url).netloc.lower()
         if self.respect_robots and not await self._robots_allowed(url, domain):
@@ -76,6 +84,8 @@ class Fetcher:
                 headers = {"User-Agent": ua, "Accept-Language": "en"}
                 if is_json:
                     headers["Accept"] = "application/json"
+                if extra_headers:
+                    headers.update(extra_headers)
                 try:
                     resp = await self._client.request(
                         method, url, headers=headers, json=json_body
