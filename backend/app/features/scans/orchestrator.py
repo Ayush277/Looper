@@ -32,7 +32,7 @@ from app.scraping.strategies import run_strategy_chain
 from app.scraping.types import ScrapeOutcome
 from app.shared.hashing import job_content_hash
 
-DIGEST_JOB_CAP = 25
+DIGEST_JOB_CAP = 40
 
 
 async def _scan_company(
@@ -119,13 +119,22 @@ async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> Non
         logger.info("digest skipped: no new matches")
         return
 
-    companies = list(dict.fromkeys(name for _, name in rows))
+    # Only the jobs actually shown in this digest are marked emailed — the rest
+    # roll into the next digest, so a large backlog is never silently swallowed.
+    digest_rows = rows[:DIGEST_JOB_CAP]
+    companies = list(dict.fromkeys(name for _, name in digest_rows))
     subject_tail = ", ".join(companies[:2]) + (
         f" +{len(companies) - 2}" if len(companies) > 2 else ""
     )
+    shown = len(digest_rows)
+    remaining = len(rows) - shown
+    subject = (
+        f"LoopJob: {shown} new internship match{'es' if shown != 1 else ''} ({subject_tail})"
+    )
+    if remaining > 0:
+        subject += f" +{remaining} more"
     digest = Digest(
-        subject=f"LoopJob: {len(rows)} new internship match"
-        f"{'es' if len(rows) != 1 else ''} ({subject_tail})",
+        subject=subject,
         jobs=[
             DigestJob(
                 company=name,
@@ -135,7 +144,7 @@ async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> Non
                 apply_url=job.apply_url,
                 reasons=[str(r["term"]) for r in job.match_reasons if r["kind"] != "exclude"][:5],
             )
-            for job, name in rows[:DIGEST_JOB_CAP]
+            for job, name in digest_rows
         ],
         scanned_companies=scanned,
         scan_time=datetime.now(timezone.utc).strftime("%H:%M UTC"),
@@ -147,7 +156,7 @@ async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> Non
         scan_run_id=run.id,
         recipient=app.notification_email,
         subject=digest.subject,
-        job_count=len(rows),
+        job_count=shown,
         status="sent" if result.ok else "failed",
         provider_message_id=result.provider_message_id,
         error=result.error,
@@ -155,8 +164,9 @@ async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> Non
     session.add(log)
     await session.flush()
     if result.ok:
-        # Same transaction as the log: the zero-duplicate guarantee.
-        for job, _ in rows:
+        # Same transaction as the log: the zero-duplicate guarantee. Only the
+        # shown jobs are marked — the backlog rolls into the next digest.
+        for job, _ in digest_rows:
             job.email_sent_at = utcnow()
             session.add(EmailLogJob(email_log_id=log.id, job_id=job.id))
 

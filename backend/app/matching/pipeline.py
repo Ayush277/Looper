@@ -17,6 +17,8 @@ from app.matching.rules import (
     check_requirements,
     has_early_career_signal,
     is_early_career_keyword,
+    is_india_keyword,
+    is_india_location,
 )
 
 # An include keyword only becomes a *reason* above this similarity.
@@ -69,6 +71,10 @@ async def match_jobs(
     enforce_early_career = any(is_early_career_keyword(k.term) for k in includes)
     scored_includes = role_includes or includes
 
+    # Location gate: if the user lists India/city requirement keywords, keep
+    # only India-based (or India-mentioning) jobs. "location only india".
+    enforce_india = any(is_india_keyword(k.term) for k in keywords if k.kind == "requirement")
+
     await _ensure_keyword_embeddings(session, embedder, includes)
 
     stats = MatchStats()
@@ -102,6 +108,16 @@ async def match_jobs(
             job.status = "unmatched"
             job.match_score = None
             job.match_reasons = [{"term": "not an early-career role", "kind": "gate"}]
+            stats.unmatched += 1
+            continue
+
+        # 2b. India location gate.
+        if enforce_india and not is_india_location(
+            job.title, job.location, job.description_snippet
+        ):
+            job.status = "unmatched"
+            job.match_score = None
+            job.match_reasons = [{"term": "not India-based", "kind": "gate"}]
             stats.unmatched += 1
             continue
 

@@ -31,9 +31,9 @@ EXPERIENCE_MIN_YEARS = 2  # a role wanting ≥2 yrs experience is not early-care
 # Strong signals are trustworthy anywhere (title or description).
 _STRONG = (
     r"intern(ships?)?|co-?op|new[\s-]?grad(uate)?s?|campus\s+(hire|recruit)|"
-    r"graduate\s+(program|trainee|scheme)|grad\s+program|early[\s-]?career|"
-    r"entry[\s-]?level|fresher|apprentice(ship)?|"
-    r"(class|batch)\s+of\s+20\d\d|20\d\d\s+grad"
+    r"graduate\s+(program|trainee|scheme|engineer|analyst|associate)|grad\s+program|"
+    r"early[\s-]?career|entry[\s-]?level|fresher|apprentice(ship)?|"
+    r"(class|batch)\s+(of\s+)?20\d\d|20\d\d\s*[/,&]\s*20\d\d|20\d\d\s+grad"
 )
 # Weak signals are only trusted in the TITLE (too common in description prose,
 # e.g. "university degree required", "current students").
@@ -74,6 +74,33 @@ def has_early_career_signal(title: str, snippet: str | None) -> bool:
 def is_early_career_keyword(term: str) -> bool:
     t = term.lower()
     return any(k in t for k in EARLY_CAREER_TERMS)
+
+
+# ── India location gate ─────────────────────────────────────────────────
+# Cities/states/country tokens that mark a job as India-based. Bare "remote"
+# is intentionally excluded — remote-anywhere is usually not India-specific.
+INDIA_TOKENS = [
+    "india", "bengaluru", "bangalore", "hyderabad", "pune", "gurugram", "gurgaon",
+    "mumbai", "new delhi", "delhi", "noida", "chennai", "kolkata", "ahmedabad",
+    "jaipur", "kochi", "cochin", "chandigarh", "indore", "coimbatore", "nagpur",
+    "visakhapatnam", "vizag", "mysore", "mysuru", "trivandrum",
+    "thiruvananthapuram", "karnataka", "telangana", "maharashtra", "haryana",
+    "tamil nadu", "kerala", "uttar pradesh", "gujarat",
+]
+_INDIA_RE = re.compile(rf"(?<!\w)(?:{'|'.join(INDIA_TOKENS)})(?!\w)", re.I)
+
+INDIA_KEYWORD_TERMS = {
+    "india", *[t for t in INDIA_TOKENS if t not in ("india",)],
+}
+
+
+def is_india_location(title: str, location: str | None, snippet: str | None) -> bool:
+    text = " ".join(p for p in [title, location, snippet] if p)
+    return bool(_INDIA_RE.search(text))
+
+
+def is_india_keyword(term: str) -> bool:
+    return term.lower() in INDIA_KEYWORD_TERMS
 
 
 def check_exclusions(

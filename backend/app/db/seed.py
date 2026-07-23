@@ -27,6 +27,8 @@ COMPANIES: dict[str, str | None] = {
     "Rubrik": None,  # auto-discovered on Greenhouse by the ATS prober
     "LinkedIn": "https://careers.linkedin.com",
     "Intuit": "https://jobs.intuit.com/search-jobs",
+    # Curated India job board (many employers, fresher / 2026-2027 batch).
+    "DebugWithShubham": "https://debugwithshubham.com/jobs",
 }
 
 KEYWORDS: dict[str, list[str]] = {
@@ -34,6 +36,11 @@ KEYWORDS: dict[str, list[str]] = {
         "Software Engineer", "Software Development Engineer", "Backend", "Platform",
         "Infrastructure", "AI Engineer", "Machine Learning", "University", "Student",
         "Intern", "Graduate", "New Grad",
+        # Broader early-career roles for 2027 grads
+        "Product Manager", "Associate Product Manager", "Developer",
+        "Data Analyst", "Data Scientist", "Data Engineer", "Analyst",
+        "Full Stack", "Frontend", "DevOps", "Cloud", "QA", "Business Analyst",
+        "Graduate Trainee", "Apprentice",
     ],
     "requirement": [
         "2027", "Batch 2027", "Expected Graduation 2027", "Final Year", "India",

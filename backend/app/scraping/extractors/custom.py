@@ -216,9 +216,67 @@ async def atlassian(fetcher: Fetcher) -> list[RawJob]:
     return jobs
 
 
+async def debugwithshubham(fetcher: Fetcher) -> list[RawJob]:
+    """DebugWithShubham job board — a curated India-focused feed of fresher /
+    2026-2027-batch roles across many employers (its own aggregation of company
+    postings). One source unlocks dozens of companies. Employer name is folded
+    into the title; the batch/experience tag drives the early-career + 2027
+    signals downstream."""
+    jobs: list[RawJob] = []
+    seen: set[str] = set()
+    base = "https://debugwithshubham-web-page.onrender.com/api/jobs/"
+    for page in range(1, 8):  # ~70 most-recent postings, both types
+        resp = await fetcher.get(f"{base}?page={page}&limit=100", is_json=True)
+        if resp.status_code != 200:
+            break
+        try:
+            items = json.loads(resp.text)
+        except json.JSONDecodeError:
+            break
+        if not items:
+            break
+        for j in items:
+            jid = str(j.get("id", ""))
+            role = (j.get("role") or "").strip()
+            url = j.get("apply_url")
+            if not jid or jid in seen or not role or not url:
+                continue
+            seen.add(jid)
+            employer = (j.get("company_name") or "").strip()
+            title = f"{employer} · {role}" if employer else role
+            # Fold batch/experience/type into the snippet so the gates can read
+            # "Fresher", "Batch 2026/2027", etc.
+            snippet = " | ".join(
+                p for p in [j.get("experience"), j.get("job_type"), j.get("work_type")]
+                if p and str(p).strip()
+            ) or None
+            posted = None
+            if isinstance(j.get("posted_at"), str):
+                with contextlib.suppress(ValueError):
+                    posted = datetime.fromisoformat(j["posted_at"][:19]).date()
+            try:
+                jobs.append(
+                    RawJob(
+                        title=title,
+                        apply_url=url,
+                        location=j.get("location"),
+                        external_id=jid,
+                        posted_at=posted,
+                        description_snippet=snippet,
+                    )
+                )
+            except (KeyError, ValueError):
+                continue
+    if jobs:
+        logger.info("debugwithshubham adapter: {} jobs", len(jobs))
+    return jobs
+
+
 ADAPTERS: dict[str, Adapter] = {
     "amazon": amazon,
     "microsoft": microsoft,
     "uber": uber,
     "atlassian": atlassian,
+    "debugwithshubham": debugwithshubham,
+    "job board (india)": debugwithshubham,
 }
