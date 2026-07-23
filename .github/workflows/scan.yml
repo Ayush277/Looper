@@ -2,10 +2,10 @@ name: LoopJob scan
 
 on:
   schedule:
-    # 08:00 / 14:00 / 20:00 IST == 02:30 / 08:30 / 14:30 UTC
-    - cron: "30 2 * * *"
-    - cron: "30 8 * * *"
-    - cron: "30 14 * * *"
+    # Hourly — the repo is public, so Actions minutes are unlimited/free.
+    # A digest is sent only when a scan finds NEW matches, so this never spams:
+    # silence means nothing new appeared that hour.
+    - cron: "0 * * * *"
   workflow_dispatch: {}
 
 concurrency:
