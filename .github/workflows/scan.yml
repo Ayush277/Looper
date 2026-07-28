@@ -12,6 +12,11 @@ concurrency:
   group: loopjob-scan
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -58,3 +63,24 @@ jobs:
           from app.features.scans.orchestrator import run_scan
           asyncio.run(run_scan(trigger='scheduled'))
           "
+
+      - name: Build dashboard page
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m app.export_page
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: backend/site
+
+  deploy-dashboard:
+    needs: scan
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

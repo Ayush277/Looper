@@ -1,0 +1,354 @@
+<!doctype html>
+<!-- Hallmark · macrostructure: Workbench · genre: modern-minimal · theme: Cobalt
+     tone: premium-utilitarian · anchor hue: cool (cobalt ~255)
+     pre-emit critique: P5 H4 E4 S4 R5 V4 -->
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LoopJob — Internship Dashboard</title>
+<meta name="description" content="Every matched early-career software role in India, updated hourly.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-display:"Space Grotesk",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;--space-8:48px;
+  --radius:14px;--radius-sm:10px;--radius-pill:999px;
+  --ease-out:cubic-bezier(.16,1,.3,1);--ease-in-out:cubic-bezier(.65,0,.35,1);
+  --dur:.32s;--dur-fast:.16s;
+}
+:root[data-theme="dark"]{
+  --bg:oklch(15% .022 260);--bg-grad:oklch(18% .03 262);
+  --surface:oklch(19% .025 260);--surface-2:oklch(23% .03 260);--surface-hover:oklch(25% .035 260);
+  --border:oklch(31% .03 260);--border-soft:oklch(26% .025 260);
+  --fg:oklch(96% .01 260);--fg-dim:oklch(78% .02 260);--muted:oklch(66% .025 260);
+  --accent:oklch(66% .16 255);--accent-strong:oklch(72% .17 255);--accent-fg:oklch(16% .03 260);
+  --accent-soft:oklch(66% .16 255 / .14);
+  --good:oklch(74% .15 158);--good-soft:oklch(74% .15 158 / .16);
+  --warn:oklch(80% .14 78);
+  --shadow:0 1px 2px oklch(0% 0 0/.4),0 8px 30px oklch(0% 0 0/.28);
+}
+:root[data-theme="light"]{
+  --bg:oklch(97.5% .006 260);--bg-grad:oklch(99% .008 258);
+  --surface:oklch(100% 0 0);--surface-2:oklch(97% .008 260);--surface-hover:oklch(95.5% .01 260);
+  --border:oklch(90% .012 260);--border-soft:oklch(93% .01 260);
+  --fg:oklch(24% .03 262);--fg-dim:oklch(40% .03 262);--muted:oklch(52% .03 262);
+  --accent:oklch(52% .18 256);--accent-strong:oklch(46% .19 256);--accent-fg:oklch(99% 0 0);
+  --accent-soft:oklch(52% .18 256 / .1);
+  --good:oklch(55% .14 158);--good-soft:oklch(55% .14 158 / .12);
+  --warn:oklch(62% .15 62);
+  --shadow:0 1px 2px oklch(50% .02 260/.08),0 10px 34px oklch(50% .04 260/.10);
+}
+*{box-sizing:border-box}
+html,body{overflow-x:clip;margin:0}
+body{
+  background:radial-gradient(120% 80% at 100% 0%,var(--bg-grad),var(--bg) 55%);
+  color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+}
+a{color:inherit}
+::selection{background:var(--accent-soft)}
+
+/* ── Top bar ─────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);
+  background:color-mix(in oklab,var(--bg) 78%,transparent);
+  border-bottom:1px solid var(--border-soft);
+}
+.topbar-in{max-width:1180px;margin:0 auto;padding:var(--space-4) var(--space-5);
+  display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:var(--space-3);font-family:var(--font-display);
+  font-weight:700;font-size:18px;letter-spacing:-.01em}
+.mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--accent-strong),var(--accent));color:var(--accent-fg);
+  font-weight:700;box-shadow:0 0 0 1px var(--border) inset}
+.brand small{display:block;font-family:var(--font-mono);font-weight:400;font-size:11px;
+  color:var(--muted);letter-spacing:0}
+.spacer{flex:1}
+.updated{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.iconbtn{width:38px;height:38px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--surface);color:var(--fg-dim);cursor:pointer;font-size:16px;
+  display:grid;place-items:center;transition:background var(--dur-fast),color var(--dur-fast),border-color var(--dur-fast)}
+.iconbtn:hover{background:var(--surface-hover);color:var(--fg)}
+.iconbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── Shell ───────────────────────────────────────────── */
+.wrap{max-width:1180px;margin:0 auto;padding:var(--space-6) var(--space-5) var(--space-8)}
+.lede h1{font-family:var(--font-display);font-size:clamp(26px,4vw,38px);line-height:1.08;
+  letter-spacing:-.025em;margin:0 0 var(--space-2);overflow-wrap:anywhere}
+.lede p{color:var(--muted);margin:0 0 var(--space-6);max-width:60ch}
+
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-3);margin-bottom:var(--space-6)}
+.tile{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);
+  padding:var(--space-4) var(--space-4)}
+.tile .n{font-family:var(--font-display);font-size:26px;font-weight:600;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.tile .l{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);margin-top:2px}
+.tile.accent .n{color:var(--accent-strong)}
+
+/* tabs */
+.tabs{display:flex;gap:var(--space-1);flex-wrap:wrap;border-bottom:1px solid var(--border-soft);
+  margin-bottom:var(--space-4)}
+.tab{appearance:none;background:none;border:0;cursor:pointer;font-family:var(--font-body);
+  font-size:14px;font-weight:500;color:var(--muted);padding:var(--space-3) var(--space-3);
+  position:relative;transition:color var(--dur-fast)}
+.tab:hover{color:var(--fg-dim)}
+.tab[aria-selected="true"]{color:var(--fg)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:var(--space-3);right:var(--space-3);
+  bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+.tab .c{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-left:6px}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* toolbar */
+.toolbar{display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-5)}
+.search{flex:1;min-width:220px;position:relative}
+.search input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--fg);
+  border-radius:var(--radius-sm);padding:11px 12px 11px 38px;font-family:var(--font-body);font-size:14px;
+  transition:border-color var(--dur-fast),background var(--dur-fast)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+select{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:var(--radius-sm);
+  padding:11px 34px 11px 12px;font-family:var(--font-body);font-size:14px;cursor:pointer;
+  appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a94ac' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+input:focus-visible,select:focus-visible{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft)}
+.count{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-bottom:var(--space-4)}
+
+/* cards grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--space-4)}
+.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);
+  padding:var(--space-4) var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-3);
+  transition:transform var(--dur) var(--ease-out),border-color var(--dur-fast),box-shadow var(--dur);
+  animation:rise var(--dur) var(--ease-out) both}
+.card:hover{transform:translateY(-3px);border-color:var(--border);box-shadow:var(--shadow)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card-top{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+.co{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;color:var(--fg-dim);
+  font-family:var(--font-mono)}
+.co i{width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent-strong);
+  display:grid;place-items:center;font-style:normal;font-weight:700;font-size:11px;font-family:var(--font-display)}
+.chip{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;
+  border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-pill);padding:2px 9px}
+.chip.new{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.chip.type{color:var(--accent-strong);border-color:transparent;background:var(--accent-soft)}
+.role{font-family:var(--font-display);font-size:17px;font-weight:600;line-height:1.25;letter-spacing:-.01em;
+  text-decoration:none;overflow-wrap:anywhere}
+.role:hover{color:var(--accent-strong)}
+.meta{display:flex;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+.meta b{color:var(--fg-dim);font-weight:500}
+.reasons{display:flex;flex-wrap:wrap;gap:6px}
+.rz{font-size:11px;color:var(--muted);border:1px solid var(--border-soft);border-radius:var(--radius-pill);
+  padding:1px 8px}
+.actions{display:flex;gap:var(--space-2);margin-top:auto;padding-top:var(--space-2)}
+.apply{flex:1;text-align:center;text-decoration:none;background:var(--accent);color:var(--accent-fg);
+  font-weight:600;font-size:13.5px;padding:9px 14px;border-radius:var(--radius-sm);
+  transition:background var(--dur-fast),transform var(--dur-fast)}
+.apply:hover{background:var(--accent-strong)}
+.apply:active{transform:translateY(1px)}
+.act{width:40px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);
+  border-radius:var(--radius-sm);cursor:pointer;font-size:15px;display:grid;place-items:center;
+  transition:color var(--dur-fast),border-color var(--dur-fast),background var(--dur-fast)}
+.act:hover{color:var(--fg)}
+.act[aria-pressed="true"]{color:var(--accent-strong);border-color:var(--accent);background:var(--accent-soft)}
+.act.applied[aria-pressed="true"]{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.act:focus-visible,.apply:focus-visible,.role:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.empty{text-align:center;padding:var(--space-8) var(--space-4);color:var(--muted);
+  border:1px dashed var(--border);border-radius:var(--radius);grid-column:1/-1}
+.empty h3{font-family:var(--font-display);color:var(--fg-dim);margin:0 0 6px}
+
+.foot{margin-top:var(--space-8);padding-top:var(--space-5);border-top:1px solid var(--border-soft);
+  color:var(--muted);font-size:12.5px;font-family:var(--font-mono);text-align:center}
+.foot a{color:var(--accent-strong);text-decoration:none}
+
+@media(max-width:640px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid{grid-template-columns:1fr}
+  .wrap{padding:var(--space-5) var(--space-4) var(--space-8)}
+}
+@media(prefers-reduced-motion:reduce){
+  .card{animation:none}
+  *{transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="mark">◆</span><span>LoopJob<small>internship radar · india</small></span></div>
+  <span class="spacer"></span>
+  <span class="updated" id="updated">updated __UPDATED__</span>
+  <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">◑</button>
+</div></header>
+
+<main class="wrap">
+  <div class="lede">
+    <h1>Your 2027 early-career roles, in one place.</h1>
+    <p>Every matched internship &amp; fresher software role across India — deduplicated,
+       ranked, and refreshed hourly. Save the ones you like, track what you've applied to.</p>
+  </div>
+
+  <section class="stats" id="stats"></section>
+
+  <div class="tabs" id="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="recent" aria-selected="true">Recent <span class="c" id="c-recent"></span></button>
+    <button class="tab" role="tab" data-view="all" aria-selected="false">All <span class="c" id="c-all"></span></button>
+    <button class="tab" role="tab" data-view="saved" aria-selected="false">Saved <span class="c" id="c-saved"></span></button>
+    <button class="tab" role="tab" data-view="applied" aria-selected="false">Applied <span class="c" id="c-applied"></span></button>
+    <button class="tab" role="tab" data-view="archive" aria-selected="false">Archive <span class="c" id="c-archive"></span></button>
+  </div>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="q" placeholder="Search role, company, location…" autocomplete="off">
+    </div>
+    <select id="fCompany"><option value="">All companies</option></select>
+    <select id="fType"><option value="">All types</option><option>Internship</option><option>Full-time</option></select>
+    <select id="fMode"><option value="">Any mode</option><option>On-site</option><option>Remote</option><option>Hybrid</option></select>
+    <select id="fSort">
+      <option value="posted">Newest posted</option>
+      <option value="found">Recently found</option>
+      <option value="score">Best match</option>
+    </select>
+  </div>
+
+  <div class="count" id="count"></div>
+  <div class="grid" id="grid"></div>
+
+  <div class="foot">
+    __TOTAL__ matched roles · saved &amp; applied are stored on this device ·
+    <a href="https://github.com/Ayush277/Looper">LoopJob</a> — never miss another opening.
+  </div>
+</main>
+
+<script>
+const JOBS = __JOBS_JSON__;
+const TODAY = "__TODAY__";
+const store = {
+  get(k){try{return JSON.parse(localStorage.getItem("loopjob."+k)||"{}")}catch{return {}}},
+  set(k,v){localStorage.setItem("loopjob."+k,JSON.stringify(v))}
+};
+let saved = store.get("saved"), applied = store.get("applied");
+const $ = s=>document.querySelector(s);
+const state = {view:"recent", q:"", company:"", type:"", mode:"", sort:"posted"};
+
+// theme
+const themeBtn = $("#themeBtn");
+const savedTheme = localStorage.getItem("loopjob.theme");
+if(savedTheme) document.documentElement.dataset.theme = savedTheme;
+themeBtn.onclick = ()=>{
+  const t = document.documentElement.dataset.theme==="dark"?"light":"dark";
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem("loopjob.theme", t);
+};
+
+function daysAgo(d){ if(!d) return 999; return Math.round((new Date(TODAY)-new Date(d))/864e5); }
+function isRecent(j){ return daysAgo(j.found) <= 1; }   // today + yesterday
+function isNew(j){ return j.found === TODAY; }
+function esc(s){return (s||"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
+
+// populate company filter
+[...new Set(JOBS.map(j=>j.company))].sort().forEach(c=>{
+  const o=document.createElement("option"); o.value=c; o.textContent=c; $("#fCompany").appendChild(o);
+});
+
+function subset(view){
+  if(view==="saved")   return JOBS.filter(j=>saved[j.id]);
+  if(view==="applied") return JOBS.filter(j=>applied[j.id]);
+  if(view==="archive") return JOBS.filter(j=>!isRecent(j));
+  if(view==="recent")  return JOBS.filter(isRecent);
+  return JOBS;
+}
+
+function counts(){
+  $("#c-recent").textContent  = JOBS.filter(isRecent).length;
+  $("#c-all").textContent     = JOBS.length;
+  $("#c-saved").textContent   = Object.keys(saved).length;
+  $("#c-applied").textContent = Object.keys(applied).length;
+  $("#c-archive").textContent = JOBS.filter(j=>!isRecent(j)).length;
+  $("#stats").innerHTML = [
+    ["Matched roles", JOBS.length, ""],
+    ["New today", JOBS.filter(isNew).length, "accent"],
+    ["Saved", Object.keys(saved).length, ""],
+    ["Applied", Object.keys(applied).length, ""],
+  ].map(([l,n,c])=>`<div class="tile ${c}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+}
+
+function render(){
+  let r = subset(state.view);
+  const q = state.q.toLowerCase().trim();
+  if(state.company) r = r.filter(j=>j.company===state.company);
+  if(state.type)    r = r.filter(j=>j.type===state.type);
+  if(state.mode)    r = r.filter(j=>j.mode===state.mode);
+  if(q) r = r.filter(j=>(j.title+" "+j.company+" "+j.location+" "+j.batch).toLowerCase().includes(q));
+  r.sort((a,b)=> state.sort==="score" ? (b.score||0)-(a.score||0)
+    : state.sort==="found" ? (b.found||"").localeCompare(a.found||"")
+    : (b.posted||b.found||"").localeCompare(a.posted||a.found||""));
+
+  $("#count").textContent = r.length + (r.length===1?" role":" roles");
+  const grid = $("#grid");
+  if(!r.length){
+    grid.innerHTML = `<div class="empty"><h3>Nothing here yet</h3>
+      <p>${state.view==="saved"?"Tap the heart on a role to save it.":
+         state.view==="applied"?"Mark roles applied to track them here.":
+         "Try clearing filters — new roles arrive every hour."}</p></div>`;
+    return;
+  }
+  grid.innerHTML = r.map((j,i)=>`
+    <article class="card" style="animation-delay:${Math.min(i,12)*22}ms">
+      <div class="card-top">
+        <span class="co"><i>${esc(j.company[0]||"?")}</i>${esc(j.company)}</span>
+        <span class="spacer" style="flex:1"></span>
+        ${isNew(j)?'<span class="chip new">new</span>':""}
+        <span class="chip type">${esc(j.type)}</span>
+        <span class="chip">${esc(j.mode)}</span>
+      </div>
+      <a class="role" href="${esc(j.url)}" target="_blank" rel="noreferrer">${esc(j.title)}</a>
+      <div class="meta">
+        <span>📍 <b>${esc(j.location)}</b></span>
+        ${j.posted?`<span>posted <b>${esc(j.posted)}</b></span>`:""}
+        <span>found <b>${esc(j.found)}</b></span>
+        ${j.score!=null?`<span>match <b>${j.score}</b></span>`:""}
+      </div>
+      ${j.reasons.length?`<div class="reasons">${j.reasons.map(x=>`<span class="rz">${esc(x)}</span>`).join("")}</div>`:""}
+      <div class="actions">
+        <a class="apply" href="${esc(j.url)}" target="_blank" rel="noreferrer">Apply →</a>
+        <button class="act save" data-id="${esc(j.id)}" aria-pressed="${!!saved[j.id]}" title="Save" aria-label="Save">${saved[j.id]?"♥":"♡"}</button>
+        <button class="act applied" data-id="${esc(j.id)}" aria-pressed="${!!applied[j.id]}" title="Mark applied" aria-label="Mark applied">✓</button>
+      </div>
+    </article>`).join("");
+
+  grid.querySelectorAll(".act.save").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.id; saved[id]?delete saved[id]:saved[id]=1; store.set("saved",saved); counts();
+    b.setAttribute("aria-pressed",!!saved[id]); b.textContent=saved[id]?"♥":"♡";
+    if(state.view==="saved") render();
+  });
+  grid.querySelectorAll(".act.applied").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.id; applied[id]?delete applied[id]:applied[id]=1; store.set("applied",applied); counts();
+    b.setAttribute("aria-pressed",!!applied[id]);
+    if(state.view==="applied") render();
+  });
+}
+
+// wire controls
+$("#tabs").querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  $("#tabs").querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected","false"));
+  t.setAttribute("aria-selected","true"); state.view=t.dataset.view; render();
+});
+$("#q").oninput=e=>{state.q=e.target.value;render()};
+$("#fCompany").onchange=e=>{state.company=e.target.value;render()};
+$("#fType").onchange=e=>{state.type=e.target.value;render()};
+$("#fMode").onchange=e=>{state.mode=e.target.value;render()};
+$("#fSort").onchange=e=>{state.sort=e.target.value;render()};
+
+counts(); render();
+</script>
+</body>
+</html>

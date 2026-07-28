@@ -11,6 +11,9 @@ target-version = "py310"
 select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
 ignore = ["B008"]  # FastAPI Depends() in defaults is the framework idiom
 
+[tool.ruff.lint.per-file-ignores]
+"app/export_page.py" = ["E501"]  # embedded HTML/JS template lines
+
 [tool.mypy]
 python_version = "3.10"
 strict = true
