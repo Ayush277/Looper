@@ -39,11 +39,17 @@ TG_API = "https://api.telegram.org/bot{token}/{method}"
 TG_LIMIT = 3900  # Telegram hard-caps a message at 4096 chars
 
 
+# Every character MarkdownV2 treats as syntax (per Telegram's Bot API spec).
+TG_RESERVED = set("_*[]()~`>#+-=|{}.!\\")
+
+
 def _tg_escape(text: str) -> str:
-    """Escape the characters Telegram's MarkdownV2 treats as syntax."""
-    for ch in r"_*[]()~`>#+-=|{}.!\\":
-        text = text.replace(ch, "\\" + ch)
-    return text
+    """Escape MarkdownV2 syntax characters.
+
+    Single pass on purpose: a per-character replace loop would re-escape the
+    backslashes it just inserted, producing garbled output.
+    """
+    return "".join("\\" + c if c in TG_RESERVED else c for c in text)
 
 
 def render_digest_telegram(digest: Digest) -> list[str]:
