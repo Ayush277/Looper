@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write   # needed to force-push the dashboard mirror branch
   pages: write
   id-token: write
 
@@ -79,6 +79,7 @@ jobs:
       # independent second URL if Pages is ever unavailable.
       - name: Publish mirror branch
         working-directory: .
+        continue-on-error: true   # a mirror hiccup must never fail the scan
         run: |
           cp backend/site/index.html /tmp/index.html
           git config user.name "loopjob-bot"
