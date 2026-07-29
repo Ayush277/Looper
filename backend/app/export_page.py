@@ -40,7 +40,7 @@ def _classify_mode(location: str, snippet: str) -> str:
     return "On-site"
 
 
-async def collect() -> list[dict]:
+async def collect() -> list[dict[str, object]]:
     async with SessionFactory() as session:
         rows = (
             await session.execute(
@@ -50,7 +50,7 @@ async def collect() -> list[dict]:
                 .order_by(Job.posted_at.desc().nulls_last(), Job.first_seen_at.desc())
             )
         ).all()
-    jobs = []
+    jobs: list[dict[str, object]] = []
     for job, company in rows:
         reasons = [
             str(r.get("term"))

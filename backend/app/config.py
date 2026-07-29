@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Optional secrets — features degrade gracefully when unset
     openai_api_key: str = ""
     resend_api_key: str = ""
+    # Telegram push notifications. chat_id is auto-discovered from the bot's
+    # recent updates when left blank (user just has to message the bot once).
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
     jsearch_api_key: str = ""
     adzuna_app_id: str = ""
     adzuna_app_key: str = ""
