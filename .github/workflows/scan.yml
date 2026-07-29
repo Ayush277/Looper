@@ -13,9 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write   # needed to force-push the dashboard mirror branch
-  pages: write
-  id-token: write
+  contents: read
 
 jobs:
   scan:
@@ -71,37 +69,11 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python -m app.export_page
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      # Primary (and only) host: Cloudflare Pages.
+      - name: Deploy dashboard to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: backend/site
-
-      # Mirror: publish the same page to an orphan `site` branch, force-pushed
-      # so history never accumulates. Serves via CDN (githack/statically) as an
-      # independent second URL if Pages is ever unavailable.
-      - name: Publish mirror branch
-        working-directory: .
-        continue-on-error: true   # a mirror hiccup must never fail the scan
-        run: |
-          cp backend/site/index.html /tmp/index.html
-          git config user.name "loopjob-bot"
-          git config user.email "bot@users.noreply.github.com"
-          git checkout --orphan site-tmp
-          git rm -rf --cached . >/dev/null 2>&1 || true
-          rm -rf backend frontend docs .github Makefile README.md PROGRESS.md \
-                 docker-compose.yml .env.example render.yaml .hallmark 2>/dev/null || true
-          cp /tmp/index.html index.html
-          git add -f index.html
-          git commit -q -m "dashboard mirror $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -f origin site-tmp:site
-
-  deploy-dashboard:
-    needs: scan
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy backend/site --project-name=loopjob --branch=main
+          workingDirectory: .
