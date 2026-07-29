@@ -6,10 +6,10 @@ matches → notify → mark email_sent_at in the same transaction as email_log.
 Idempotent: rerunning produces no new rows and no duplicate emails.
 """
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from loguru import logger
-from sqlalchemy import select
+from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.engine import SessionFactory
@@ -96,6 +96,75 @@ async def _scan_company(
     return outcome, new_jobs
 
 
+DASHBOARD_URL = "https://loopjob.pages.dev"
+HEARTBEAT_HOUR_IST = 8  # one status ping a day so silence is never ambiguous
+
+
+async def _maybe_send_heartbeat(session: AsyncSession, run: ScanRun) -> None:
+    """Once a day, report that the loop is alive and the dashboard is fresh.
+
+    Without this, a quiet day is indistinguishable from a broken scanner — the
+    exact ambiguity that made the user distrust the product.
+    """
+    now_ist = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    if now_ist.hour != HEARTBEAT_HOUR_IST:
+        return
+    today = now_ist.date()
+    already = (
+        await session.execute(
+            select(func.count())
+            .select_from(EmailLog)
+            .where(
+                EmailLog.subject.like("LoopJob daily%"),
+                func.date(EmailLog.sent_at) == today,
+            )
+        )
+    ).scalar_one()
+    if already:
+        return
+
+    totals = (
+        await session.execute(
+            select(
+                func.count(Job.id),
+                func.sum(func.cast(Job.status == "matched", Integer)),
+            )
+        )
+    ).one()
+    total_jobs, total_matched = totals[0] or 0, totals[1] or 0
+    subject = f"LoopJob daily · {total_matched} live matches on your dashboard"
+    digest = Digest(
+        subject=subject,
+        jobs=[
+            DigestJob(
+                company="LoopJob",
+                title=f"Dashboard updated · {total_matched} matched roles "
+                f"({total_jobs} scanned)",
+                location=f"{run.companies_ok}/{run.companies_total} sources healthy",
+                posted_at=None,
+                apply_url=DASHBOARD_URL,
+                reasons=[f"{run.jobs_new} new roles found this scan"],
+            )
+        ],
+        scanned_companies=run.companies_total,
+        scan_time=now_ist.strftime("%d %b %H:%M IST"),
+    )
+    app = (await session.execute(select(AppSettings))).scalar_one()
+    result = await get_notifier().send(app.notification_email or "", digest)
+    session.add(
+        EmailLog(
+            scan_run_id=run.id,
+            recipient=app.notification_email or "telegram",
+            subject=subject,
+            job_count=0,
+            status="sent" if result.ok else "failed",
+            provider_message_id=result.provider_message_id,
+            error=result.error,
+        )
+    )
+    logger.info("daily heartbeat sent: ok={}", result.ok)
+
+
 async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> None:
     # populate_existing: bypass the session identity-map cache — settings may
     # have been edited (e.g. via the dashboard) while this scan was running.
@@ -117,6 +186,7 @@ async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> Non
     ).all()
     if not rows:
         logger.info("digest skipped: no new matches")
+        await _maybe_send_heartbeat(session, run)
         return
 
     # Only the jobs actually shown in this digest are marked emailed — the rest
@@ -147,7 +217,8 @@ async def _send_digest(session: AsyncSession, run: ScanRun, scanned: int) -> Non
             for job, name in digest_rows
         ],
         scanned_companies=scanned,
-        scan_time=datetime.now(timezone.utc).strftime("%H:%M UTC"),
+        scan_time=datetime.now(timezone.utc).strftime("%H:%M UTC")
+        + f" · {DASHBOARD_URL}",
     )
     notifier = get_notifier()
     result = await notifier.send(app.notification_email, digest)
