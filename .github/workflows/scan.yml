@@ -74,6 +74,24 @@ jobs:
         with:
           path: backend/site
 
+      # Mirror: publish the same page to an orphan `site` branch, force-pushed
+      # so history never accumulates. Serves via CDN (githack/statically) as an
+      # independent second URL if Pages is ever unavailable.
+      - name: Publish mirror branch
+        working-directory: .
+        run: |
+          cp backend/site/index.html /tmp/index.html
+          git config user.name "loopjob-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git checkout --orphan site-tmp
+          git rm -rf --cached . >/dev/null 2>&1 || true
+          rm -rf backend frontend docs .github Makefile README.md PROGRESS.md \
+                 docker-compose.yml .env.example render.yaml .hallmark 2>/dev/null || true
+          cp /tmp/index.html index.html
+          git add -f index.html
+          git commit -q -m "dashboard mirror $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f origin site-tmp:site
+
   deploy-dashboard:
     needs: scan
     runs-on: ubuntu-latest
